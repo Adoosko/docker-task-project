@@ -4,11 +4,12 @@ image: adoosdeveloper/docker-task-backend
 
 servers:
   web:
-    proxy:
-  host: 164.92.244.115
-  app_port: 3000
-traefik:
-  host_port: 3000
+    hosts:
+      - 164.92.244.115
+    proxy: false
+    options:
+      publish:
+        - "3000:3000"
 
 registry:
   username: adoosdeveloper
