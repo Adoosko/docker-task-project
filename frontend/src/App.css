@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 600px;
+  max-width: 650px;
   margin: 40px auto;
   padding: 0 20px;
   box-sizing: border-box;
@@ -53,19 +53,25 @@
 
 .todo-form {
   display: flex;
+  flex-direction: column;
   gap: 12px;
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
 }
 
 .todo-input {
-  flex-grow: 1;
+  width: 100%;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--code-bg);
+  background: var(--bg);
   color: var(--text-h);
   font-size: 15px;
   font-family: inherit;
   outline: none;
+  box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -74,20 +80,44 @@
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
+.form-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.form-controls label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.todo-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
 .todo-button {
-  padding: 12px 24px;
-  border-radius: 10px;
+  padding: 10px 20px;
+  border-radius: 8px;
   border: none;
   background: var(--accent);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .todo-button:hover {
-  background: brightness(1.1);
   filter: brightness(1.1);
 }
 
@@ -95,6 +125,60 @@
   transform: scale(0.98);
 }
 
+/* Controls (Search & Filter) */
+.todo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.todo-search-input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.todo-search-input:focus {
+  border-color: var(--accent);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.filter-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Error/Loading */
 .todo-error {
   padding: 12px 16px;
   border-radius: 10px;
@@ -161,45 +245,174 @@
   margin-bottom: 12px;
 }
 
+/* List and Items */
 .todo-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .todo-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
   border-radius: 10px;
   background: var(--code-bg);
-  border: 1px solid transparent;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
   animation: fadeIn 0.3s ease-out;
 }
 
 .todo-item:hover {
   border-color: var(--accent-border);
-  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
-.task-badge {
-  background: var(--accent-bg);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 12px;
+.todo-item.completed {
+  opacity: 0.65;
+}
+
+.todo-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.todo-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .task-text {
   color: var(--text-h);
   font-size: 15px;
+  font-weight: 500;
   word-break: break-all;
+  text-align: left;
+}
+
+.todo-item.completed .task-text {
+  text-decoration: line-through;
+  color: var(--text);
+}
+
+.priority-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.priority-badge.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: rgb(34, 197, 94);
+}
+
+.priority-badge.medium {
+  background: rgba(234, 179, 8, 0.15);
+  color: rgb(202, 138, 4);
+}
+
+.priority-badge.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: rgb(239, 68, 68);
+}
+
+/* Edit Mode */
+.edit-container {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.todo-edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+  outline: none;
+}
+
+.todo-edit-select {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Action Buttons */
+.todo-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.1s ease;
+}
+
+.save-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.cancel-btn {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.edit-btn {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.edit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+}
+
+.delete-btn:hover {
+  background: rgb(239, 68, 68);
+  color: #fff;
+}
+
+.action-btn:hover:not(:disabled) {
+  filter: brightness(0.95);
 }
 
 .todo-footer {
@@ -213,7 +426,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -223,9 +436,11 @@
 
 @media (max-width: 600px) {
   .todo-form {
-    flex-direction: column;
+    gap: 8px;
   }
-  .todo-button {
+  .form-controls {
     width: 100%;
+    justify-content: space-between;
   }
 }
+
