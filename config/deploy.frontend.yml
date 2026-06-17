@@ -1,0 +1,24 @@
+# Configuration for Frontend Service
+service: docker-task-frontend
+image: adoosdeveloper/docker-task-frontend
+
+servers:
+  web:
+    hosts:
+      - 164.92.244.115
+    proxy: false
+    options:
+      publish:
+        - "8080:80"
+
+registry:
+  username: adoosdeveloper
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+  context: ./frontend
+  dockerfile: ./frontend/Dockerfile
+  args:
+    VITE_API_URL: http://164.92.244.115:3000

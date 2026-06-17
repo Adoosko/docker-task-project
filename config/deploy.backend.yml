@@ -1,0 +1,47 @@
+# Configuration for Backend Service and PostgreSQL Database
+service: docker-task-backend
+image: adoosdeveloper/docker-task-backend
+
+servers:
+  web:
+    hosts:
+      - 164.92.244.115
+    proxy: false
+    options:
+      publish:
+        - "3000:3000"
+
+registry:
+  username: adoosdeveloper
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+  context: ./backend
+  dockerfile: ./backend/Dockerfile
+
+env:
+  clear:
+    PORT: 3000
+    DB_HOST: docker-task-backend-db
+    DB_PORT: 5432
+    DB_USERNAME: postgres
+    DB_DATABASE: postgres
+  secret:
+    - DB_PASSWORD
+
+# Postgres Database as an Accessory
+accessories:
+  db:
+    image: postgres:15-alpine
+    host: 164.92.244.115
+    port: 5432:5432
+    env:
+      clear:
+        POSTGRES_USER: postgres
+        POSTGRES_DB: postgres
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - /var/lib/postgresql/data:/var/lib/postgresql/data

@@ -1,0 +1,9 @@
+# Ignore node modules and build outputs
+node_modules/
+dist/
+.next/
+*.log
+
+# Ignore local environment variables and Kamal secrets
+.env
+.kamal/secrets
