@@ -30,6 +30,7 @@ Skalovanie aplikacie - menime pocet replik v deployment.yaml + aplikujeme znova 
 
 
 **Kamal V2 - jednoduchsie riesenie pre nasadenie.**
+
 Kamal je postaveny nad dockerom a ssh.
 Kamal setup - ovladame priamo z lokalneho pc cmd
 nema servies alebo persistent volumes claim ma iba deployment. Vsetko riesi cez ssh a docker. Ma to svoje vyhody aj nevyhody. 
@@ -45,10 +46,10 @@ tento config subor kamal potrebuje na to, aby vedel, co, kde a ako ma nasadit ap
 
 ked chceme nasadit novu verziu aplikacie tak stacia nam iba 2 prikazy>
 
-# Backend (build + push + deploy automaticky)
+Backend (build + push + deploy automaticky)
 kamal deploy -c config/deploy.backend.yml
 
-# Frontend (build + push + deploy automaticky)
+Frontend (build + push + deploy automaticky)
 kamal deploy -c config/deploy.frontend.yml
 
 
