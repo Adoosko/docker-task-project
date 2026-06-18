@@ -471,12 +471,7 @@ Kamal vyžaduje na serveri len:
 1. **SSH prístup** (root alebo sudo)
 2. **Docker** — Kamal ho nainštaluje automaticky pri prvom `kamal setup`!
 
-```bash
-# To je všetko! Kamal pri prvom spustení sám:
-# - Nainštaluje Docker na server
-# - Nastaví Docker networking
-# - Nainštaluje kamal-proxy (reverzný proxy)
-```
+
 
 ### B.3 — Konfiguračné súbory
 

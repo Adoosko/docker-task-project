@@ -1,121 +1,74 @@
-# Príručka pre Nasadenie Fullstack Aplikácie do K3s (Kubernetes) 🚀
+**Test K3s kubernetes a Kamal na linux serveri.**
 
-Tento dokument slúži ako kompletný návod na nastavenie čistého virtuálneho servera (VM), inštaláciu K3s a následné nasadenie a správu našej kontajnerizovanej fullstack aplikácie. Príručka je pripravená v profesionálnom formáte vhodnom pre firemné prostredie.
 
----
+Folder structure> frontend appka v reacte, backend v nestjs, postgresql databaza.
 
-## 📋 1. Predpoklady a Príprava VM
+>.kamal = sprava kamal v2. > /config = deploy files potrebne na kamal. Rozdelene na Fe a Be + DB 
+>/k8s = sprava k3s kubernetes - config manifesty pre deployment, services, persistent volumes.
+>docker-compose.yml = lokalny vyvoj vsetko jednim prikazom
 
-Nasadenie predpokladá čistú inštanciu virtuálneho servera s operačným systémom **Ubuntu Server (20.04 LTS alebo 22.04 LTS)**.
-
-### Sieťové nastavenia (Firewall / Security Groups)
-Na VM je potrebné povoliť prichádzajúcu prevádzku (ingress) na nasledovných portoch:
-*   `22/TCP` (SSH prístup)
-*   `8080/TCP` (Frontend aplikácia)
-*   `3000/TCP` (Backend API)
-*   `6443/TCP` (Iba ak potrebujete pristupovať ku Kubernetes API zvonku)
-
----
-
-## ⚙️ 2. Inicializácia K3s na VM
-
-K3s je odľahčená distribúcia Kubernetes, ideálna pre menšie VM a single-node klastre.
-
-### Inštalácia
-Pripojte sa na VM cez SSH a spustiť:
-```bash
-# Aktualizácia balíčkov operačného systému
-sudo apt update && sudo apt upgrade -y
-
-# Inštalácia K3s (automaticky nainštaluje control plane, worker node a nástroj kubectl)
+**k3s setup - instalacka na ubuntu:** 
 curl -sfL https://get.k3s.io | sh -
-```
 
-### Overenie stavu klastra
-Po dokončení inštalácie overte, či je uzol (node) pripravený:
-```bash
-sudo kubectl get nodes
-```
-*Očakávaný výstup: Názov vášho uzla v stave `Ready`.*
+Buildnut docker images fe a be + pushnut to dockerhub
+nakopirovat manifest files na nas server + aplikovat pripapadne nieco upravit - deployment, services, persistent volumes, imagepullsecrets 
 
----
+services urcuje typ zobrazenia - LoadBalancer = pristup zvonku, ClusterIP = pristup len z klastra (pre db je to ok, pre fe/be by malo byt LoadBalancer pokial chceme pristup zvonku )
 
-## 🛠️ 3. Šikovný Kubernetes Cheatsheet (Užitočné príkazy)
+deployment - urcuje pocet replik a image name, ports
 
-Pre správu a údržbu aplikácie v K3s budete najčastejšie využívať nasledovné príkazy.
+persistent volume claim - pre db povolime napr. 2GB, aby data ostali aj po restarte podu
 
-### Monitorovanie stavu
-*   `kubectl get pods` - Zobrazí zoznam všetkých spustených kontajnerov (Podov) a ich stav (`Running`, `Error`, `CrashLoopBackOff`).
-*   `kubectl get services` - Zobrazí zoznam služieb, ich interné IP adresy a mapované verejné porty (`LoadBalancer` / `ClusterIP`).
-*   `kubectl get pvc` - Skontroluje stav diskov (Persistent Volume Claims) na ukladanie dát.
+Nasadenie na k3s cluster> kubectl apply -f k8s/
+-vsesetky manifesty nasadime naraz
 
-### Riešenie problémov a Logy (Troubleshooting)
-*   `kubectl logs -f <pod-name>` - Sleduje živé logy (výstupy) z vybraného kontajnera (veľmi dôležité pri hľadaní chýb v aplikácii).
-*   `kubectl describe pod <pod-name>` - Vypíše detailné systémové informácie o pode (napr. dôvod, prečo kontajner zlyhal pri štarte alebo nedostatok pamäte).
-*   `kubectl exec -it <pod-name> -- sh` - Otvorí interaktívny terminál priamo vnútri bežiaceho kontajnera (vhodné pre manuálne overenie databázy a pod.).
+Ked chceme nasadit novu verziu aplikacie, tak buildneme novu verziu docker image + updateneme image name v deployment.yaml + aplikujeme znova kubectl apply -f k8s/deployment.yaml
+pod sa nanovo zrestartuje a aplikuje sa nova verzia.
 
-### Správa zdrojov
-*   `kubectl apply -f <priečinok-alebo-súbor>` - Aplikuje (nasadí alebo zaktualizuje) definície z YAML súborov.
-*   `kubectl delete -f <priečinok-alebo-súbor>` - Bezpečne odstráni všetky zdroje definované v YAML súboroch z klastra.
-*   `kubectl rollout restart deployment/<deployment-name>` - Vynúti reštart podov bez výpadku (stiahne najnovšie obrazy z Docker Hubu a postupne ich vymení).
+Skalovanie aplikacie - menime pocet replik v deployment.yaml + aplikujeme znova kubectl apply -f k8s/deployment.yaml aleboo jednoduchsie cez scale: kubectl scale deployment backend --replicas=5
 
----
 
-## 📦 4. Architektúra Aplikácie v Kubernetes
 
-Aplikácia je rozdelená na tri logické vrstvy:
+**Kamal V2 - jednoduchsie riesenie pre nasadenie.**
+Kamal je postaveny nad dockerom a ssh.
+Kamal setup - ovladame priamo z lokalneho pc cmd
+nema servies alebo persistent volumes claim ma iba deployment. Vsetko riesi cez ssh a docker. Ma to svoje vyhody aj nevyhody. 
 
-```mermaid
-graph TD
-    Client[Webový prehliadač klienta] -->|Port 8080| FrontendServ[frontend-service: LoadBalancer]
-    Client -->|Port 3000| BackendServ[backend-service: LoadBalancer]
-    
-    FrontendServ --> FrontendPod[frontend-deployment: Nginx Pod]
-    BackendServ --> BackendPod[backend-deployment: NestJS Pod]
-    
-    BackendPod -->|Interná sieť klastra: 5432| PostgresServ[postgres-service: ClusterIP]
-    PostgresServ --> PostgresPod[postgres-deployment: PostgreSQL Pod]
-    PostgresPod --> PVC[postgres-pvc: Trvalé úložisko na VM]
-```
+kamal setup: kamal setup vygeneruje .yml subor, kedze kamal je stvoreny skor na jednu apku, takze som si rozumne pomenoval subory a dal ich do slozky config: deploy.backend.yml a deploy.frontend.yml. 
 
----
+tento config subor kamal potrebuje na to, aby vedel, co, kde a ako ma nasadit aplikaciu.
+-ip servera
+-dockerhub meno + heslo
+-nazov image
+-ako maju byt prepojene porty, db
 
-## 🚀 5. Postup Nasadenia (Deployment Runbook)
 
-### Fáza A: Príprava obrazov (Lokálne na PC vývojára)
-Pred nasadením sa musia vygenerovať Docker obrazy a nahrať do registra (Docker Hub).
+ked chceme nasadit novu verziu aplikacie tak stacia nam iba 2 prikazy>
 
-1. **Zostavenie a nahratie Backendu:**
-   ```bash
-   docker build -t adoosdeveloper/docker-task-backend:latest ./backend
-   docker push adoosdeveloper/docker-task-backend:latest
-   ```
-2. **Zostavenie a nahratie Frontendu:**
-   *(Upozornenie: `--build-arg` nastavuje premennú prostredia, aby prehliadač klienta vedel, kde nájde API).*
-   ```bash
-   docker build --build-arg VITE_API_URL=http://<IP_SERVERA>:3000 -t adoosdeveloper/docker-task-frontend:latest ./frontend
-   docker push adoosdeveloper/docker-task-frontend:latest
-   ```
+# Backend (build + push + deploy automaticky)
+kamal deploy -c config/deploy.backend.yml
 
-### Fáza B: Prenos konfigurácií a Spustenie
-1. **Skopírujte zložku s Kubernetes manifestmi (`k8s/`) na server:**
-   ```bash
-   scp -r ./k8s root@<IP_SERVERA>:/root/
-   ```
-2. **Pripojte sa na server a spustite aplikáciu:**
-   ```bash
-   ssh root@<IP_SERVERA>
-   cd /root/k8s
-   
-   # Spustenie celej aplikácie naraz
-   kubectl apply -f .
-   ```
+# Frontend (build + push + deploy automaticky)
+kamal deploy -c config/deploy.frontend.yml
 
-### Fáza C: Overenie funkčnosti
-Počkajte približne 1 minútu, kým K3s stiahne obrazy a spustí kontajnery:
-```bash
-kubectl get pods
-```
-Všetky pody by mali byť v stave `STATUS: Running` a `READY: 1/1`.
 
-Aplikáciu následne nájdete na adrese: `http://<IP_SERVERA>:8080`
+
+
+cize kamal je o dost jednoduhsi ako k3s kubernetes pre male projekty ale pokial mas vela roboty ako napriklad 100 microserviceov tak tam je kamal uz nepouzitelny. Vtedy by bol lepsi kubernetes cluster. 
+
+ale paci sa mi flexibiilta kubernetu, jednoduche skalovanie, monitoring, a vela inych veci co kubernetes ponuka aj ta Kubernetes Lens apka co mi dava super overview co sa na serveri deje. A tiez to ze k3s je lahsia verzia kubernetu je super na testovanie. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
