@@ -14,9 +14,11 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
       containers:
         - name: backend
-          image: adoosdeveloper/docker-task-backend:latest
+          image: adoosdeveloper/docker-task-test:backend-latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

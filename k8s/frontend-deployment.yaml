@@ -14,9 +14,11 @@ spec:
       labels:
         app: frontend
     spec:
+      imagePullSecrets:
+        - name: dockerhub-secret
       containers:
         - name: frontend
-          image: adoosdeveloper/docker-task-frontend:latest
+          image: adoosdeveloper/docker-task-test:frontend-latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
