@@ -15,8 +15,12 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return version info object', () => {
+      expect(appController.getHello()).toEqual({
+        status: 'ok',
+        version: 'v1.3.0',
+        message: 'Development Nightly Build'
+      });
     });
   });
 });

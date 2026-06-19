@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 1. ZDROJE (Resources) - načítame spoločný base a lokálny Ingress
+resources:
+  - ../../base
+  - ingress.yaml
+
+# 2. NAMESPACE
+namespace: dev
+
+# 3. NASTAVENIA
+configMapGenerator:
+  - name: frontend-config
+    files:
+      - env.js
+
+# 4. IMAGE VERZIE — DEV vždy beží na najnovšej verzii
+#    Po buildnutí nového obrazu zmeníš tag tu a spustíš: kubectl apply -k .
+#    Príklad: po buildu v1.4.0 zmeníš backend-v1.3.0 → backend-v1.4.0
+patches:
+  - target:
+      kind: Deployment
+      name: backend-deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: adoosdeveloper/docker-task-test:backend-v1.3.0
+  - target:
+      kind: Deployment
+      name: frontend-deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: adoosdeveloper/docker-task-test:frontend-v1.3.0

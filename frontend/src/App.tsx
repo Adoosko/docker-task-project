@@ -20,13 +20,17 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [backendVersion, setBackendVersion] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'priority' | 'status'>('date');
 
   // Editing state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [editingPriority, setEditingPriority] = useState('medium');
 
-  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/tasks';
+  const BACKEND_ROOT_URL = (window as any).env?.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = BACKEND_ROOT_URL + '/tasks';
+  const ENV_NAME = (window as any).env?.ENVIRONMENT_NAME || '';
 
   const fetchTasks = async () => {
     try {
@@ -48,6 +52,20 @@ function App() {
 
   useEffect(() => {
     fetchTasks();
+    const fetchBackendVersion = async () => {
+      try {
+        const response = await fetch(API_URL + '/version');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.version) {
+            setBackendVersion(data.version);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching backend version:', err);
+      }
+    };
+    fetchBackendVersion();
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -155,6 +173,29 @@ function App() {
     }
   };
 
+  const handleClearCompleted = async () => {
+    const completedTasks = tasks.filter(t => t.isCompleted);
+    if (completedTasks.length === 0) return;
+    if (!confirm(`Naozaj chcete vymazať všetkých ${completedTasks.length} dokončených úloh?`)) return;
+    
+    try {
+      setLoading(true);
+      await Promise.all(
+        completedTasks.map(task => 
+          fetch(`${API_URL}/${task.id}`, {
+            method: 'DELETE',
+          })
+        )
+      );
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      setError('Nepodarilo sa vymazať dokončené úlohy.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter & Search tasks
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.text.toLowerCase().includes(searchTerm.toLowerCase());
@@ -167,11 +208,53 @@ function App() {
     return matchesSearch;
   });
 
+  // Sort tasks helper
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortBy === 'priority') {
+      const priorityWeight: Record<string, number> = { high: 3, medium: 2, low: 1 };
+      const weightA = priorityWeight[a.priority] || 0;
+      const weightB = priorityWeight[b.priority] || 0;
+      return weightB - weightA;
+    }
+    if (sortBy === 'status') {
+      if (a.isCompleted === b.isCompleted) return 0;
+      return a.isCompleted ? 1 : -1;
+    }
+    return b.id - a.id;
+  });
+
   return (
     <div className="todo-container">
       <header className="todo-header">
         <h1>Task Manager Pro</h1>
-        <p className="todo-subtitle">An enhanced containerized Full-Stack Task Board</p>
+        <div className="badges-container" style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+          {ENV_NAME && (
+            <div style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              borderRadius: '12px',
+              fontSize: '0.85rem',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              backgroundColor: ENV_NAME.toLowerCase() === 'prod' || ENV_NAME.toLowerCase() === 'production' ? '#ef4444' : (ENV_NAME.toLowerCase() === 'test' || ENV_NAME.toLowerCase() === 'testing' ? '#f59e0b' : '#3b82f6'),
+              color: '#fff'
+            }}>
+              {ENV_NAME} Environment
+            </div>
+          )}
+          <div style={{
+            display: 'inline-block',
+            padding: '4px 12px',
+            borderRadius: '12px',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            backgroundColor: '#10b981',
+            color: '#fff'
+          }}>
+            v1.3.0
+          </div>
+        </div>
+        <p className="todo-subtitle" style={{ marginTop: '12px' }}>An enhanced containerized Full-Stack Task Board</p>
       </header>
 
       <main className="todo-main">
@@ -204,34 +287,105 @@ function App() {
             </div>
           </form>
 
+          {/* Task Statistics Widget */}
+          <div className="stats-widget" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+            gap: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            padding: '16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px dashed rgba(255, 255, 255, 0.1)'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa' }}>{tasks.length}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Celkovo</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b' }}>{tasks.filter(t => !t.isCompleted).length}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Aktívne</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>{tasks.filter(t => t.isCompleted).length}</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Dokončené</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#a78bfa' }}>
+                {tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Pokrok</div>
+            </div>
+          </div>
+
           {/* Search and Filter Controls */}
-          <div className="todo-controls">
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="todo-search-input"
-            />
-            <div className="filter-tabs">
-              <button
-                className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-                onClick={() => setFilter('all')}
+          <div className="todo-controls" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="todo-search-input"
+                style={{ flex: 1 }}
+              />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="todo-select"
+                style={{ width: 'auto', padding: '8px 12px' }}
               >
-                All ({tasks.length})
-              </button>
-              <button
-                className={`filter-tab ${filter === 'active' ? 'active' : ''}`}
-                onClick={() => setFilter('active')}
-              >
-                Active ({tasks.filter(t => !t.isCompleted).length})
-              </button>
-              <button
-                className={`filter-tab ${filter === 'completed' ? 'active' : ''}`}
-                onClick={() => setFilter('completed')}
-              >
-                Completed ({tasks.filter(t => t.isCompleted).length})
-              </button>
+                <option value="date">📅 Najnovšie</option>
+                <option value="priority">🔥 Podľa priority</option>
+                <option value="status">✅ Podľa stavu</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div className="filter-tabs" style={{ margin: 0 }}>
+                <button
+                  className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+                  onClick={() => setFilter('all')}
+                >
+                  All ({tasks.length})
+                </button>
+                <button
+                  className={`filter-tab ${filter === 'active' ? 'active' : ''}`}
+                  onClick={() => setFilter('active')}
+                >
+                  Active ({tasks.filter(t => !t.isCompleted).length})
+                </button>
+                <button
+                  className={`filter-tab ${filter === 'completed' ? 'active' : ''}`}
+                  onClick={() => setFilter('completed')}
+                >
+                  Completed ({tasks.filter(t => t.isCompleted).length})
+                </button>
+              </div>
+
+              {tasks.some(t => t.isCompleted) && (
+                <button
+                  onClick={handleClearCompleted}
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+                >
+                  🗑️ Vymazať dokončené
+                </button>
+              )}
             </div>
           </div>
 
@@ -254,7 +408,7 @@ function App() {
             </div>
           ) : (
             <ul className="todo-list">
-              {filteredTasks.map((task) => (
+              {sortedTasks.map((task) => (
                 <li key={task.id} className={`todo-item ${task.isCompleted ? 'completed' : ''}`}>
                   <div className="todo-item-left">
                     <input
@@ -339,7 +493,8 @@ function App() {
       </main>
 
       <footer className="todo-footer">
-        <p>Connected to Backend API: <code>{API_URL}</code></p>
+        <p>Connected to Backend API: <code>{API_URL}</code> {backendVersion && `[Backend version: ${backendVersion}]`}</p>
+        <p style={{ marginTop: '6px', opacity: 0.8, fontSize: '0.85rem' }}>Frontend Version: <code>v1.3.0</code></p>
       </footer>
     </div>
   );

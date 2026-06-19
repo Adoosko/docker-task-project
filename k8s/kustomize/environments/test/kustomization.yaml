@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 1. ZDROJE (Resources)
+resources:
+  - ../../base
+  - ingress.yaml
+
+# 2. NAMESPACE
+namespace: test
+
+# 3. NASTAVENIA
+configMapGenerator:
+  - name: frontend-config
+    files:
+      - env.js
+
+# 4. IMAGE VERZIE — TEST beží na verzii, ktorá prešla DEV testovaním
+#    Keď dev verzia je stabilná, promuj ju sem (zmeň tagy).
+#    Príklad: dev v1.3.0 je OK → zmeníš tu v1.2.0 → v1.3.0
+patches:
+  - target:
+      kind: Deployment
+      name: backend-deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: adoosdeveloper/docker-task-test:backend-v1.2.0
+  - target:
+      kind: Deployment
+      name: frontend-deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: adoosdeveloper/docker-task-test:frontend-v1.2.0

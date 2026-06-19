@@ -17,6 +17,15 @@ class UpdateTaskDto {
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
+  @Get('version')
+  getVersion(): any {
+    return {
+      status: 'ok',
+      version: 'v1.3.0',
+      message: 'Development Nightly Build'
+    };
+  }
+
   @Get()
   findAll(): Promise<Task[]> {
     return this.tasksService.findAll();
