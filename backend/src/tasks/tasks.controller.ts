@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import type { Task } from './task.entity';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 class CreateTaskDto {
   text: string;
@@ -21,32 +23,42 @@ export class TasksController {
   getVersion(): any {
     return {
       status: 'ok',
-      version: 'v1.3.0',
-      message: 'Development Nightly Build'
+      version: 'v1.4.0',
+      message: 'Secure full-stack build'
     };
   }
 
   @Get()
-  findAll(): Promise<Task[]> {
-    return this.tasksService.findAll();
+  @UseGuards(JwtAuthGuard)
+  findAll(@CurrentUser() user: any): Promise<Task[]> {
+    return this.tasksService.findAll(user.userId);
   }
 
   @Post()
-  create(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
-    return this.tasksService.create(createTaskDto.text, createTaskDto.priority);
+  @UseGuards(JwtAuthGuard)
+  create(
+    @Body() createTaskDto: CreateTaskDto,
+    @CurrentUser() user: any,
+  ): Promise<Task> {
+    return this.tasksService.create(createTaskDto.text, user.userId, createTaskDto.priority);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateTaskDto: UpdateTaskDto,
+    @CurrentUser() user: any,
   ): Promise<Task> {
-    return this.tasksService.update(id, updateTaskDto);
+    return this.tasksService.update(id, user.userId, updateTaskDto);
   }
 
   @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.tasksService.delete(id);
+  @UseGuards(JwtAuthGuard)
+  delete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ): Promise<void> {
+    return this.tasksService.delete(id, user.userId);
   }
 }
-
